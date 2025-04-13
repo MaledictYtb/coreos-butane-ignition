@@ -17,3 +17,39 @@ storage:
           # Enable it.
           # This file must sort before 40-disable-passwords.conf.
           PasswordAuthentication yes
+    - path: /etc/systemd/logind.conf.d/inhibit-suspend.conf
+      mode: 0644
+      contents:
+        inline: |
+          # Disable sleeping when the lis is closed
+          [Login]
+          HandleLidSwitch=ignore
+    - path: /etc/systemd/zram-generator.conf
+      mode: 0644
+      contents:
+        inline: |
+          # This config file enables a /dev/zram0 device with the default settings
+          [zram0]
+systemd:
+  units:
+    # Install Docker CE
+    - name: rpm-ostree-install-docker-ce.service
+      enabled: true
+      contents: |
+        [Unit]
+        Description=Install Docker CE
+        Wants=network-online.target
+        After=network-online.target
+        Before=zincati.service
+        ConditionPathExists=!/var/lib/%N.stamp
+
+        [Service]
+        Type=oneshot
+        RemainAfterExit=yes
+        ExecStart=/usr/bin/curl --output-dir "/etc/yum.repos.d" --remote-name https://download.docker.com/linux/fedora/docker-ce.repo
+        ExecStart=/usr/bin/rpm-ostree override remove moby-engine containerd runc docker-cli --install docker-ce
+        ExecStart=/usr/bin/touch /var/lib/%N.stamp
+        ExecStart=/usr/bin/systemctl --no-block reboot
+
+        [Install]
+        WantedBy=multi-user.target
