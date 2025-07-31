@@ -7,6 +7,7 @@ passwd:
       home_dir: /home/maledict
       groups:
         - wheel
+        - docker
 storage:
   files:
     - path: /etc/ssh/sshd_config.d/20-enable-passwords.conf
